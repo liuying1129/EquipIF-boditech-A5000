@@ -35,7 +35,7 @@ object frmMain: TfrmMain
     object ToolBar1: TToolBar
       Left = 9
       Top = 0
-      Width = 316
+      Width = 281
       Height = 21
       Align = alNone
       AutoSize = True
@@ -97,7 +97,7 @@ object frmMain: TfrmMain
         Left = 244
         Top = 0
         AutoSize = True
-        Caption = #36864#20986'(Esc)'
+        Caption = #36864#20986
         ImageIndex = 2
         OnClick = N3Click
       end
@@ -278,34 +278,10 @@ object frmMain: TfrmMain
       OnClick = N3Click
     end
   end
-  object ADOConnection1: TADOConnection
-    LoginPrompt = False
-    Provider = 'SQLOLEDB.1'
-    Left = 210
-    Top = 26
-  end
   object ApplicationEvents1: TApplicationEvents
     OnActivate = ApplicationEvents1Activate
     Left = 174
     Top = 26
-  end
-  object ActionList1: TActionList
-    Left = 70
-    Top = 26
-    object editpass: TAction
-      Caption = 'editpass'
-      ShortCut = 113
-    end
-    object about: TAction
-      Caption = 'about'
-      ShortCut = 112
-      OnExecute = ToolButton7Click
-    end
-    object stop: TAction
-      Caption = 'stop'
-      ShortCut = 27
-      OnExecute = N3Click
-    end
   end
   object OpenDialog1: TOpenDialog
     Left = 240
@@ -316,7 +292,7 @@ object frmMain: TfrmMain
     Port = 'COM1'
     Parity.Bits = prNone
     StopBits = sbOneStopBit
-    DataBits = dbEight
+    DataBits = dbSeven
     Events = [evRxChar, evTxEmpty, evRxFlag, evRing, evBreak, evCTS, evDSR, evError, evRLSD, evRx80Full]
     FlowControl.OutCTSFlow = False
     FlowControl.OutDSRFlow = False
@@ -331,8 +307,13 @@ object frmMain: TfrmMain
   object ComDataPacket1: TComDataPacket
     ComPort = ComPort1
     IncludeStrings = True
+    MaxBufferSize = 3000
     OnPacket = ComDataPacket1Packet
     Left = 104
     Top = 104
+  end
+  object SaveDialog1: TSaveDialog
+    Left = 272
+    Top = 27
   end
 end

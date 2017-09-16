@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Controls, Forms,
   LYTray, Menus, StdCtrls, Buttons, ADODB,
-  ActnList, AppEvnts, ComCtrls, ToolWin, ExtCtrls,
+  AppEvnts, ComCtrls, ToolWin, ExtCtrls,
   registry,inifiles,Dialogs,
   StrUtils, DB,ComObj,Variants, CPort;
 
@@ -16,7 +16,6 @@ type
     N1: TMenuItem;
     N2: TMenuItem;
     N3: TMenuItem;
-    ADOConnection1: TADOConnection;
     ApplicationEvents1: TApplicationEvents;
     CoolBar1: TCoolBar;
     ToolBar1: TToolBar;
@@ -24,10 +23,6 @@ type
     ToolButton4: TToolButton;
     ToolButton7: TToolButton;
     ToolButton8: TToolButton;
-    ActionList1: TActionList;
-    editpass: TAction;
-    about: TAction;
-    stop: TAction;
     ToolButton2: TToolButton;
     Memo1: TMemo;
     BitBtn1: TBitBtn;
@@ -38,9 +33,9 @@ type
     OpenDialog1: TOpenDialog;
     ComPort1: TComPort;
     ComDataPacket1: TComDataPacket;
+    SaveDialog1: TSaveDialog;
     procedure N3Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    //增加病人信息表中记录,返回该记录的唯一编号作为检验结果表的外键
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure N1Click(Sender: TObject);
     procedure ApplicationEvents1Activate(Sender: TObject);
@@ -58,8 +53,6 @@ type
     procedure UpdateConfig;{配置文件生效}
     function LoadInputPassDll:boolean;
     function MakeDBConn:boolean;
-    function DIFF_decode(const Value:string):string;
-    function GetSpecNo(const Value:string):string; //取得联机号
   public
     { Public declarations }
   end;
@@ -72,10 +65,7 @@ implementation
 uses ucommfunction;
 
 const
-  CR=#$D+#$A;
-  STX=#$2;ETX=#$3;ACK=#$6;NAK=#$15;
   sCryptSeed='lc';//加解密种子
-  //SEPARATOR=#$1C;
   sCONNECTDEVELOP='错误!请与开发商联系!' ;
   IniSection='Setup';
 
@@ -90,11 +80,8 @@ var
   QuaContSpecNo:string;
   QuaContSpecNoD:string;
   EquipChar:string;
-  OutFormat:string;
-  H_DTR_RTS:boolean;//DTR/RTS高电位
   ifRecLog:boolean;//是否记录调试日志
-  
-//  RFM:STRING;       //返回数据
+
   hnd:integer;
   bRegister:boolean;
 
@@ -164,14 +151,15 @@ var
   ctext        :string;
   reg          :tregistry;
 begin
-  ComDataPacket1.StartString:=STX;
-  ComDataPacket1.StopString:=ETX;
+  ComDataPacket1.StartString:='$1';
+  ComDataPacket1.StopString:=#$0D#$0A;
 
   ConnectString:=GetConnectString;
   
   UpdateConfig;
   if ifRegister then bRegister:=true else bRegister:=false;  
 
+  Caption:='数据接收服务'+ExtractFileName(Application.ExeName);
   lytray1.Hint:='数据接收服务'+ExtractFileName(Application.ExeName);
 
 //=============================初始化密码=====================================//
@@ -239,7 +227,6 @@ begin
   DataBit:=ini.ReadString(IniSection,'数据位','8');
   StopBit:=ini.ReadString(IniSection,'停止位','1');
   ParityBit:=ini.ReadString(IniSection,'校验位','None');
-  H_DTR_RTS:=ini.readBool(IniSection,'DTR/RTS高电位',false);
   autorun:=ini.readBool(IniSection,'开机自动运行',false);
   ifRecLog:=ini.readBool(IniSection,'调试日志',false);
 
@@ -249,7 +236,6 @@ begin
   SpecStatus:=ini.ReadString(IniSection,'默认样本状态','');
   CombinID:=ini.ReadString(IniSection,'组合项目代码','');
 
-  OutFormat:=ini.ReadString(IniSection,'仪器输出格式','k-1000');
   LisFormCaption:=ini.ReadString(IniSection,'检验系统窗体标题','');
 
   QuaContSpecNoG:=ini.ReadString(IniSection,'高值质控联机号','9999');
@@ -263,12 +249,16 @@ begin
   ComPort1.Port:=CommName;
   if BaudRate='1200' then
     ComPort1.BaudRate:=br1200
+    else if BaudRate='2400' then
+      ComPort1.BaudRate:=br2400
     else if BaudRate='4800' then
       ComPort1.BaudRate:=br4800
       else if BaudRate='9600' then
         ComPort1.BaudRate:=br9600
         else if BaudRate='19200' then
           ComPort1.BaudRate:=br19200
+        else if BaudRate='115200' then
+          ComPort1.BaudRate:=br115200
           else ComPort1.BaudRate:=br9600;
   if DataBit='5' then
     ComPort1.DataBits:=dbFive
@@ -322,27 +312,9 @@ begin
     result:=passflag;
 end;
 
-function TfrmMain.GetSpecNo(const Value:string):string; //取得联机号
-begin
-  if uppercase(OutFormat)='K-DPS' then result:=trim(COPY(Value,16,12)) else result:=trim(COPY(Value,12,12));
-    result:='0000'+result;
-    result:=rightstr(result,4);
-end;
-
-function TfrmMain.DIFF_decode(const Value:string):string;
-var
-  i:integer;
-begin
-  for i :=1  to length(Value) do
-  begin
-    //if ord(Value[i])<32 then CONTINUE;//32为空格代表的字符，按理应该是最小值了
-
-    result:=result+' '+inttostr(ord(Value[i]));
-  end;
-end;
-
 function TfrmMain.MakeDBConn:boolean;
 var
+  ADOConn:TADOConnection;
   newconnstr,ss: string;
   Label labReadIni;
 begin
@@ -351,13 +323,16 @@ begin
   labReadIni:
   newconnstr := GetConnectString;
   
+  ADOConn:=TADOConnection.Create(nil);
+  ADOConn.Connected := false;
+  ADOConn.ConnectionString := newconnstr;
   try
-    ADOConnection1.Connected := false;
-    ADOConnection1.ConnectionString := newconnstr;
-    ADOConnection1.Connected := true;
+    ADOConn.Connected := true;
     result:=true;
   except
   end;
+  ADOConn.Close;
+  ADOConn.Free;
   if not result then
   begin
     ss:='服务器'+#2+'Edit'+#2+#2+'0'+#2+#2+#3+
@@ -377,12 +352,10 @@ begin
   if LoadInputPassDll then
   begin
     ss:='串口选择'+#2+'Combobox'+#2+'COM1'+#13+'COM2'+#13+'COM3'+#13+'COM4'+#2+'0'+#2+#2+#3+
-      '波特率'+#2+'Combobox'+#2+'19200'+#13+'9600'+#13+'4800'+#13+'2400'+#13+'1200'+#2+'0'+#2+#2+#3+
+      '波特率'+#2+'Combobox'+#2+'115200'+#13+'19200'+#13+'9600'+#13+'4800'+#13+'2400'+#13+'1200'+#2+'0'+#2+#2+#3+
       '数据位'+#2+'Combobox'+#2+'8'+#13+'7'+#13+'6'+#13+'5'+#2+'0'+#2+#2+#3+
       '停止位'+#2+'Combobox'+#2+'1'+#13+'1.5'+#13+'2'+#2+'0'+#2+#2+#3+
       '校验位'+#2+'Combobox'+#2+'None'+#13+'Even'+#13+'Odd'+#13+'Mark'+#13+'Space'+#2+'0'+#2+#2+#3+
-      'DTR/RTS高电位'+#2+'CheckListBox'+#2+#2+'0'+#2+#2+#3+
-      '仪器输出格式'+#2+'Combobox'+#2+'k-1000'+#13+'k-dps'+#2+'0'+#2+'注:k-dps格式带直方图'+#2+#3+
       '工作组'+#2+'Edit'+#2+#2+'1'+#2+#2+#3+
       '仪器字母'+#2+'Edit'+#2+#2+'1'+#2+#2+#3+
       '检验系统窗体标题'+#2+'Edit'+#2+#2+'1'+#2+#2+#3+
@@ -407,7 +380,10 @@ end;
 
 procedure TfrmMain.BitBtn1Click(Sender: TObject);
 begin
-  memo1.Lines.SaveToFile('c:\comm.txt');
+  SaveDialog1.DefaultExt := '.txt';
+  SaveDialog1.Filter := 'txt (*.txt)|*.txt';
+  if not SaveDialog1.Execute then exit;
+  memo1.Lines.SaveToFile(SaveDialog1.FileName);
   showmessage('保存成功!');
 end;
 
@@ -438,61 +414,32 @@ procedure TfrmMain.ComDataPacket1Packet(Sender: TObject;
   const Str: String);
 var
   SpecNo:string;
-  rfm2:string;
-  sValue:string;
   FInts:OleVariant;
   ReceiveItemInfo:OleVariant;
-  i:integer;
-  sCheckDate:string;
-  
-  WBCCSTR:string;
-  WBCOSTR:string;
-  
-  RBCCSTR:string;
-  RBCOSTR:string;
-
-  PLTCSTR:string;
-  PLTOSTR:string;
-  
-  ZFTSTR:STRING;
+  ls3:tstrings;
+  CheckDate:STRING;
 begin
   if length(memo1.Lines.Text)>=60000 then memo1.Lines.Clear;//memo只能接受64K个字符
   memo1.Lines.Add(Str);
 
-  SpecNo:=GetSpecNo(Str);
+  ls3:=StrToList(Str,'|');
 
-  //K-1000格式说明，年、月、日的顺序受仪器中的设置影响
-  //The order of the date conforms to the format in the setting program
-  if uppercase(OutFormat)='K-DPS' then sCheckDate:='20'+trim(copy(Str,2,2))+'-'+trim(copy(Str,5,2))+'-'+trim(copy(Str,8,2))+' '+copy(Str,10,5)
-  else sCheckDate:='20'+copy(Str,5,2)+'-'+copy(Str,7,2)+'-'+copy(Str,9,2);
+  if ls3.Count<10 then begin ls3.Free;exit;end;
 
-  //分解直方图数据
-  WBCCSTR:=COPY(Str,243,50);
-  WBCOSTR:=DIFF_decode(WBCCSTR);
-  
-  RBCCSTR:=COPY(Str,293,50);
-  RBCOSTR:=DIFF_decode(RBCCSTR);
+  SpecNo:=rightstr('0000'+ls3[4],4);
 
-  PLTCSTR:=COPY(Str,343,40);
-  PLTOSTR:=DIFF_decode(PLTCSTR);
-  //＝＝＝＝＝＝＝
-  
-  ReceiveItemInfo:=VarArrayCreate([0,21-1],varVariant);//共18项(为兼容K-DPS而写成21)
+  CheckDate:=copy(ls3[2],1,4)+'-'+copy(ls3[2],5,2)+'-'+copy(ls3[2],7,2)+' '+copy(ls3[2],9,2)+':'+copy(ls3[2],11,2)+':'+copy(ls3[2],13,2);
 
-  rfm2:=Str;
-  if uppercase(OutFormat)='K-DPS' then delete(rfm2,1,82) else delete(rfm2,1,30);
+  ReceiveItemInfo:=VarArrayCreate([0,0],varVariant);
 
-  for  i:=1  to 21 do
-  begin
-    if i=1 then ZFTSTR:=WBCOSTR else if i=2 then ZFTSTR:=RBCOSTR else if i=8 then ZFTSTR:=PLTOSTR else ZFTSTR:='';
-    if uppercase(OutFormat)='K-DPS' then sValue:=trim(copy(rfm2,(i-1)*5+1,5)) else sValue:=copy(rfm2,(i-1)*5+1,4);;
-    ReceiveItemInfo[i-1]:=VarArrayof([inttostr(i),sValue,ZFTSTR,'']);
-  end;
+  ReceiveItemInfo[0]:=VarArrayof([ls3[7],ls3[10],'','']);
+
+  ls3.Free;
   
   if bRegister then
   begin
     FInts :=CreateOleObject('Data2LisSvr.Data2Lis');
-    FInts.fData2Lis(ReceiveItemInfo,(SpecNo),sCheckDate,
+    FInts.fData2Lis(ReceiveItemInfo,(SpecNo),CheckDate,
       (GroupName),(SpecType),(SpecStatus),(EquipChar),
       (CombinID),'',(LisFormCaption),(ConnectString),
       (QuaContSpecNoG),(QuaContSpecNo),(QuaContSpecNoD),'',
@@ -503,11 +450,8 @@ end;
 
 procedure TfrmMain.ComPort1AfterOpen(Sender: TObject);
 begin
-  if H_DTR_RTS then
-  begin
-    ComPort1.SetDTR(true);
-    ComPort1.SetRTS(true);
-  end;
+  ComPort1.SetDTR(true);
+  ComPort1.SetRTS(true);
 end;
 
 initialization
