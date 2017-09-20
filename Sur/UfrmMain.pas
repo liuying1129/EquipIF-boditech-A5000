@@ -53,6 +53,7 @@ type
     procedure UpdateConfig;{配置文件生效}
     function LoadInputPassDll:boolean;
     function MakeDBConn:boolean;
+    function GetSpecNo(const Value:string):string; //取得联机号
   public
     { Public declarations }
   end;
@@ -151,7 +152,7 @@ var
   ctext        :string;
   reg          :tregistry;
 begin
-  ComDataPacket1.StartString:='$1';
+  ComDataPacket1.StartString:='%$1';
   ComDataPacket1.StopString:=#$0D#$0A;
 
   ConnectString:=GetConnectString;
@@ -424,15 +425,15 @@ begin
 
   ls3:=StrToList(Str,'|');
 
-  if ls3.Count<10 then begin ls3.Free;exit;end;
+  if ls3.Count<13 then begin ls3.Free;exit;end;
 
-  SpecNo:=rightstr('0000'+ls3[4],4);
+  SpecNo:=GetSpecNo(ls3[4]);
 
   CheckDate:=copy(ls3[2],1,4)+'-'+copy(ls3[2],5,2)+'-'+copy(ls3[2],7,2)+' '+copy(ls3[2],9,2)+':'+copy(ls3[2],11,2)+':'+copy(ls3[2],13,2);
 
   ReceiveItemInfo:=VarArrayCreate([0,0],varVariant);
 
-  ReceiveItemInfo[0]:=VarArrayof([ls3[7],ls3[10],'','']);
+  ReceiveItemInfo[0]:=VarArrayof([ls3[9],ls3[12],'','']);
 
   ls3.Free;
   
@@ -452,6 +453,12 @@ procedure TfrmMain.ComPort1AfterOpen(Sender: TObject);
 begin
   ComPort1.SetDTR(true);
   ComPort1.SetRTS(true);
+end;
+
+function TfrmMain.GetSpecNo(const Value: string): string;
+begin
+  //Value示例:170915_006
+  result:=rightstr('0000'+copy(Value,pos('_',Value)+1,MaxInt),4);;
 end;
 
 initialization
