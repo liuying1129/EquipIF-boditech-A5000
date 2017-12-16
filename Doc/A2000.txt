@@ -1,0 +1,15 @@
+$1|BG0175|20171216114218|-|188||Female|hsCRP|CABFA05|2018.06.04|hsCRP 4.46|CRP   < 5.0||||mg/L|mg/L|-||||G|G|0|||||||||
+$1|BG0175|20171216114310|-|||Female|hsCRP|CABFA05|2018.06.04|hsCRP > 5.0|CRP   102.99||||mg/L|mg/L|-||||G|G|0|||||||||
+$1|BG0175|20171216114032|-|||Female|hsCRP|CABFA05|2018.06.04|hsCRP > 5.0|CRP   > 200.00||||mg/L|mg/L|-||||G|G|0|||||||||
+$1|BG0175|20171216111842|-|||Female|hsCRP|CABFA05|2018.06.04|hsCRP < 0.50|CRP   < 5.0||||mg/L|mg/L|-||||G|G|0|||||||||
+Country Code = 
+$1|BG0175|20171216115117|-|||Female||||Barcode err||||||-|-||||G|G|0|||||||||
+$1|BG0175|20171216115202|-|138||Female|Total bhCG|HCBGA05|2018.07.27|< 5.00|||||mIU/mL|-|-||||G|G|0|||||||||
+Country Code = 
+$1|BG0175|20171216115222|-|139||Female|Progesterone|-||Mismatch err||||||-|-||||G|G|0|||||||||
+$1|BG0175|20171216115251|-|139||Female|Progesterone|PGBGA05|2018.08.01|8.71|2.73||||nmol/L|ng/mL|-||||G|G|0|||||||||
+$1|BG0175|20171216115644|-|||Female|Progesterone|PGBGA05|2018.08.01|< 4.45|< 1.40||||nmol/L|ng/mL|-||||G|G|0|||||||||
+$1|BG0175|20171216120011|-|||Female|Progesterone|PGBGA05|2018.08.01|< 4.45|< 1.40||||nmol/L|ng/mL|-||||G|G|0|||||||||
+$1|BG0175|20171216120036|-|||Female|hsCRP|CABFA05|2018.06.04|hsCRP 2.72|CRP   < 5.0||||mg/L|mg/L|-||||G|G|0|||||||||
+
+ 

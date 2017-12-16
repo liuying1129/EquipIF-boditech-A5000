@@ -152,7 +152,7 @@ var
   ctext        :string;
   reg          :tregistry;
 begin
-  ComDataPacket1.StartString:='%$1';
+  ComDataPacket1.StartString:='$1';
   ComDataPacket1.StopString:=#$0D#$0A;
 
   ConnectString:=GetConnectString;
@@ -259,7 +259,7 @@ begin
         else if BaudRate='19200' then
           ComPort1.BaudRate:=br19200
         else if BaudRate='115200' then
-          ComPort1.BaudRate:=br115200
+          ComPort1.BaudRate:=br115200     
           else ComPort1.BaudRate:=br9600;
   if DataBit='5' then
     ComPort1.DataBits:=dbFive
@@ -419,6 +419,7 @@ var
   ReceiveItemInfo:OleVariant;
   ls3:tstrings;
   CheckDate:STRING;
+  sValue,sValue1,sValue2:String;
 begin
   if length(memo1.Lines.Text)>=60000 then memo1.Lines.Clear;//memo只能接受64K个字符
   memo1.Lines.Add(Str);
@@ -431,9 +432,24 @@ begin
 
   CheckDate:=copy(ls3[2],1,4)+'-'+copy(ls3[2],5,2)+'-'+copy(ls3[2],7,2)+' '+copy(ls3[2],9,2)+':'+copy(ls3[2],11,2)+':'+copy(ls3[2],13,2);
 
+  sValue1:=ls3[10];
+  sValue2:=ls3[11];
+  
+  if ls3[7]='hsCRP' then
+  begin
+    if sValue2='CRP   < 5.0' then sValue:=sValue1 else sValue:=sValue2;
+  end else
+  if ls3[7]='Progesterone' then
+  begin
+    sValue:=sValue2;
+  end else sValue:=sValue1;
+  
+  sValue:=StringReplace(sValue,'hsCRP','',[rfReplaceAll, rfIgnoreCase]);
+  sValue:=StringReplace(sValue,'CRP','',[rfReplaceAll, rfIgnoreCase]);
+  
   ReceiveItemInfo:=VarArrayCreate([0,0],varVariant);
 
-  ReceiveItemInfo[0]:=VarArrayof([ls3[9],ls3[12],'','']);
+  ReceiveItemInfo[0]:=VarArrayof([ls3[7],sValue,'','']);
 
   ls3.Free;
   
