@@ -352,7 +352,7 @@ var
 begin
   if LoadInputPassDll then
   begin
-    ss:='串口选择'+#2+'Combobox'+#2+'COM1'+#13+'COM2'+#13+'COM3'+#13+'COM4'+#2+'0'+#2+#2+#3+
+    ss:='串口选择'+#2+'Combobox'+#2+'COM1'+#13+'COM2'+#13+'COM3'+#13+'COM4'+#13+'COM5'+#13+'COM6'+#2+'0'+#2+#2+#3+
       '波特率'+#2+'Combobox'+#2+'115200'+#13+'19200'+#13+'9600'+#13+'4800'+#13+'2400'+#13+'1200'+#2+'0'+#2+#2+#3+
       '数据位'+#2+'Combobox'+#2+'8'+#13+'7'+#13+'6'+#13+'5'+#2+'0'+#2+#2+#3+
       '停止位'+#2+'Combobox'+#2+'1'+#13+'1.5'+#13+'2'+#2+'0'+#2+#2+#3+
@@ -420,6 +420,7 @@ var
   ls3:tstrings;
   CheckDate:STRING;
   sValue,sValue1,sValue2:String;
+  sCaseNo:string;
 begin
   if length(memo1.Lines.Text)>=60000 then memo1.Lines.Clear;//memo只能接受64K个字符
   memo1.Lines.Add(Str);
@@ -429,6 +430,7 @@ begin
   if ls3.Count<13 then begin ls3.Free;exit;end;
 
   SpecNo:=GetSpecNo(ls3[4]);
+  sCaseNo:=ls3[4];//南方医科大学第五附属医院需要将该号码传入门诊/住院号中
 
   CheckDate:=copy(ls3[2],1,4)+'-'+copy(ls3[2],5,2)+'-'+copy(ls3[2],7,2)+' '+copy(ls3[2],9,2)+':'+copy(ls3[2],11,2)+':'+copy(ls3[2],13,2);
 
@@ -452,13 +454,14 @@ begin
   ReceiveItemInfo[0]:=VarArrayof([ls3[7],sValue,'','']);
 
   ls3.Free;
-  
+
+  //姓名{!@#}性别{!@#}出生日期{!@#}年龄{!@#}门诊/住院号{!@#}送检科室{!@#}送检医生{!@#}床号{!@#}临床诊断{!@#}备注{!@#}检验操作者{!@#}细菌{!@#}试管条码号
   if bRegister then
   begin
     FInts :=CreateOleObject('Data2LisSvr.Data2Lis');
     FInts.fData2Lis(ReceiveItemInfo,(SpecNo),CheckDate,
       (GroupName),(SpecType),(SpecStatus),(EquipChar),
-      (CombinID),'',(LisFormCaption),(ConnectString),
+      (CombinID),'{!@#}{!@#}{!@#}{!@#}'+sCaseNo,(LisFormCaption),(ConnectString),
       (QuaContSpecNoG),(QuaContSpecNo),(QuaContSpecNoD),'',
       ifRecLog,true,'常规');
     if not VarIsEmpty(FInts) then FInts:= unAssigned;
