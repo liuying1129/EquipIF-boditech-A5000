@@ -83,6 +83,11 @@ var
   EquipChar:string;
   ifRecLog:boolean;//是否记录调试日志
 
+  NoSpecNo:integer;//样本号位
+  NoCaseNo:integer;//病历号位
+  NoDtlStr:integer;//联机标识位
+  NoValue:integer;//检验结果位
+
   hnd:integer;
   bRegister:boolean;
 
@@ -231,6 +236,11 @@ begin
   autorun:=ini.readBool(IniSection,'开机自动运行',false);
   ifRecLog:=ini.readBool(IniSection,'调试日志',false);
 
+  NoSpecNo:=ini.ReadInteger(IniSection,'样本号位',4);
+  NoCaseNo:=ini.ReadInteger(IniSection,'病历号位',4);
+  NoDtlStr:=ini.ReadInteger(IniSection,'联机标识位',7);//A2000:7;A5000:9
+  NoValue:=ini.ReadInteger(IniSection,'检验结果位',10);//A2000:10;A5000:12
+  
   GroupName:=trim(ini.ReadString(IniSection,'工作组',''));
   EquipChar:=trim(uppercase(ini.ReadString(IniSection,'仪器字母','')));//读出来是大写就万无一失了
   SpecType:=ini.ReadString(IniSection,'默认样本类型','');
@@ -357,6 +367,10 @@ begin
       '数据位'+#2+'Combobox'+#2+'8'+#13+'7'+#13+'6'+#13+'5'+#2+'0'+#2+#2+#3+
       '停止位'+#2+'Combobox'+#2+'1'+#13+'1.5'+#13+'2'+#2+'0'+#2+#2+#3+
       '校验位'+#2+'Combobox'+#2+'None'+#13+'Even'+#13+'Odd'+#13+'Mark'+#13+'Space'+#2+'0'+#2+#2+#3+
+      '样本号位'+#2+'Edit'+#2+#2+'1'+#2+'垂线分隔,从0开始,第几位'+#2+#3+
+      '病历号位'+#2+'Edit'+#2+#2+'1'+#2+'垂线分隔,从0开始,第几位'+#2+#3+
+      '联机标识位'+#2+'Edit'+#2+#2+'1'+#2+'垂线分隔,从0开始,第几位'+#2+#3+
+      '检验结果位'+#2+'Edit'+#2+#2+'1'+#2+'垂线分隔,从0开始,第几位'+#2+#3+
       '工作组'+#2+'Edit'+#2+#2+'1'+#2+#2+#3+
       '仪器字母'+#2+'Edit'+#2+#2+'1'+#2+#2+#3+
       '检验系统窗体标题'+#2+'Edit'+#2+#2+'1'+#2+#2+#3+
@@ -429,12 +443,12 @@ begin
 
   if ls3.Count<13 then begin ls3.Free;exit;end;
 
-  SpecNo:=GetSpecNo(ls3[4]);
-  sCaseNo:=ls3[4];//南方医科大学第五附属医院需要将该号码传入门诊/住院号中
+  SpecNo:=GetSpecNo(ls3[NoSpecNo]);
+  sCaseNo:=ls3[NoCaseNo];//南方医科大学第五附属医院需要将该号码传入门诊/住院号中
 
   CheckDate:=copy(ls3[2],1,4)+'-'+copy(ls3[2],5,2)+'-'+copy(ls3[2],7,2)+' '+copy(ls3[2],9,2)+':'+copy(ls3[2],11,2)+':'+copy(ls3[2],13,2);
 
-  sValue1:=ls3[10];
+  sValue1:=ls3[NoValue];
   sValue2:=ls3[11];
   
   if ls3[7]='hsCRP' then
@@ -451,7 +465,7 @@ begin
   
   ReceiveItemInfo:=VarArrayCreate([0,0],varVariant);
 
-  ReceiveItemInfo[0]:=VarArrayof([ls3[7],sValue,'','']);
+  ReceiveItemInfo[0]:=VarArrayof([ls3[NoDtlStr],sValue,'','']);
 
   ls3.Free;
 
