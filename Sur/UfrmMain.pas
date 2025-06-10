@@ -400,8 +400,10 @@ begin
 
   sValue1:=ls3[NoValue];
   sValue1:=StringReplace(sValue1,'hsCRP','',[rfReplaceAll, rfIgnoreCase]);
+  sValue1:=trim(sValue1);
   sValue2:=ls3[NoValue+1];
   sValue2:=StringReplace(sValue2,'CRP','',[rfReplaceAll, rfIgnoreCase]);
+  sValue2:=trim(sValue2);
 
   ReceiveItemInfo:=VarArrayCreate([0,1],varVariant);
 
